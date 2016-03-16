@@ -12,6 +12,8 @@
 #define MAX_CLIENTS 2 //defining the maximum no. of clients to connect
 #define MAX_DATA 1024 //maximum size of send and recieve strings
 
+int client_fifos_fds[MAX_CLIENTS]; //array of client fds
+
 main(int argc, char **argv)
 {
 	struct sockaddr_in server; //socket for server
@@ -55,19 +57,24 @@ main(int argc, char **argv)
 			exit(-1);
 		}
 		printf("New client connected from port no %d and IP %s\n", ntohs(client.sin_port), inet_ntoa(client.sin_addr));
-
-		data_len = 1;
-		while(data_len)
+		int pid = fork();
+		if(pid==0)
 		{
-			data_len = recv(nsfd,data,MAX_DATA,0);
-			if(data_len)
+			close(sfd);
+			data_len = 1;
+			while(data_len)
 			{
-				send(nsfd,data,data_len,0);
-				data[data_len]='\0';
-				printf("Sent mesg : %s",data);
+				data_len = recv(nsfd,data,MAX_DATA,0);
+				if(data_len)
+				{
+					send(nsfd,data,data_len,0);
+					data[data_len]='\0';
+					printf("Sent mesg : %s",data);
+				}
 			}
-		}
 		printf("Client disconnected\n");
+		}
+		
 		close(nsfd);
 	}
 
